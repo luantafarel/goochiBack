@@ -12,7 +12,6 @@ const { check } = require('express-validator/check')
 
 const app = express()
 // Probe every 5th second.
-app.get('/health', function (req, res) { res })
 app.param(['id', 'user_id'], function (req, res, next, value) { next() })
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())

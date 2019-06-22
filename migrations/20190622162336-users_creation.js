@@ -7,7 +7,7 @@ module.exports = {
         primaryKey: true,
         allowNull: false,
         autoIncrement: true,
-        description: 'Light unique identification (PK)'
+        description: 'User unique identification (PK)'
       },
       username: {
         type: DataTypes.STRING,

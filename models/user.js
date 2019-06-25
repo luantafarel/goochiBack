@@ -48,14 +48,14 @@ module.exports = (sequelize, DataTypes) => {
       description: 'User\'s password'
     }
   }, {
-      tableName: 'users',
-      hooks: {
-        beforeCreate: user => user.hashPassword(),
-        beforeUpdate: user => {
-          if (user.changed('password')) user.hashPassword()
-        }
+    tableName: 'users',
+    hooks: {
+      beforeCreate: user => user.hashPassword(),
+      beforeUpdate: user => {
+        if (user.changed('password')) user.hashPassword()
       }
-    })
+    }
+  })
   if (typeof User === 'undefined') return
 
   User.prototype.generateToken = function (user) {

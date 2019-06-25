@@ -1,31 +1,43 @@
 module.exports = {
   up: (queryInterface, DataTypes) => {
     const NOW = queryInterface.sequelize.literal('NOW()')
-    return queryInterface.createTable('users', {
+    return queryInterface.createTable('worlds', {
       id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         allowNull: false,
         autoIncrement: true,
-        description: 'User unique identification (PK)'
+        description: 'World unique identification (PK)'
       },
       user_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        description: 'User unique identification (PK)'
+        references: {
+          model: 'users',
+          key: 'id',
+          onUpdate: 'CASCADE',
+          onDelete: 'RESTRICT'
+        },
+        description: 'User unique identification (FK)'
       },
-      email: {
+      sky: {
         type: DataTypes.STRING,
-        unique: 'users_enterprise_email_unique_idx',
-        description: 'User\'s email (unique by enterprise)'
+        allowNull: false,
+        description: 'String representation of the worlds sky color'
+      },
+      ground: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        description: 'Text representation of the worlds ground color'
+      },
+      plate: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        description: 'Text of the worlds plate'
       },
       last_login_at: {
         type: DataTypes.DATE,
         description: 'User\'s last login'
-      },
-      reset_password_token: {
-        type: DataTypes.STRING(512),
-        description: 'User\'s reset token to be validated'
       },
       created_at: {
         type: DataTypes.DATE,
@@ -43,16 +55,16 @@ module.exports = {
         type: DataTypes.DATE,
         description: 'Record deleted at'
       },
-      password: {
-        type: DataTypes.STRING,
-        description: 'User\'s password'
+      unique_visitors: {
+        type: DataTypes.INTEGER,
+        description: 'Unique visitors count'
       }
     })
   },
 
   down: (queryInterface, Sequelize) => {
     return queryInterface.sequelize.transaction(async (t) => {
-      await queryInterface.dropTable('users', { transaction: t })
+      await queryInterface.dropTable('worlds', { transaction: t })
     })
   }
 }

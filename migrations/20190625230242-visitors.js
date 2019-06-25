@@ -1,32 +1,39 @@
 module.exports = {
   up: (queryInterface, DataTypes) => {
     const NOW = queryInterface.sequelize.literal('NOW()')
-    return queryInterface.createTable('users', {
+    return queryInterface.createTable('visitors', {
       id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         allowNull: false,
         autoIncrement: true,
-        description: 'User unique identification (PK)'
+        description: 'Visitors unique identification (PK)'
       },
-      username: {
-        type: DataTypes.STRING,
+      user_id: {
+        type: DataTypes.INTEGER,
         allowNull: false,
-        unique: 'users_username_unique_idx',
-        description: 'User\'s username (unique in the system)'
+        references: {
+          model: 'users',
+          key: 'id',
+          onUpdate: 'CASCADE',
+          onDelete: 'RESTRICT'
+        },
+        description: 'User unique identification (FK)'
       },
-      email: {
-        type: DataTypes.STRING,
-        unique: 'users_email_unique_idx',
-        description: 'User\'s email (unique by enterprise)'
+      world_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'worlds',
+          key: 'id',
+          onUpdate: 'CASCADE',
+          onDelete: 'RESTRICT'
+        },
+        description: 'World unique identification (FK)'
       },
       last_login_at: {
         type: DataTypes.DATE,
         description: 'User\'s last login'
-      },
-      reset_password_token: {
-        type: DataTypes.STRING(512),
-        description: 'User\'s reset token to be validated'
       },
       created_at: {
         type: DataTypes.DATE,
@@ -43,17 +50,13 @@ module.exports = {
       deleted_at: {
         type: DataTypes.DATE,
         description: 'Record deleted at'
-      },
-      password: {
-        type: DataTypes.STRING,
-        description: 'User\'s password'
       }
     })
   },
 
   down: (queryInterface, Sequelize) => {
     return queryInterface.sequelize.transaction(async (t) => {
-      await queryInterface.dropTable('users', { transaction: t })
+      await queryInterface.dropTable('visitors', { transaction: t })
     })
   }
 }

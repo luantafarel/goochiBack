@@ -16,6 +16,8 @@ app.param(['id', 'user_id'], function (req, res, next, value) { next() })
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 const endUser = '/user'
+const endWorld = '/world'
+const endVisitor = '/visitor'
 
 app.post(`${endUser}/create`, [
   check('name').isLength({ min: 10 }),
@@ -27,6 +29,39 @@ app.post(`${endUser}/create`, [
   if (await db.User.findOne({ where: { email: req.body.email } })) res.send(Boom.conflict('email_in_use').output.payload)
   const user = await db.User.create(req.body)
   res.send(user)
+})
+
+app.post(`${endWorld}/create`, [
+  check('sky').isLength({ min: 7 }),
+  check('ground').isLength({ min: 7 }),
+  check('plate').isLength({ min: 7 })
+], async function (req, res) {
+  try {
+    const decoded = await verifyToken(req.headers.authorization)
+    if (await db.World.findByPk(decoded.id)) res.send(Boom.conflict('user_has_world').output.payload)
+    const world = await db.World.create(Object.assign({}, req.body, { unique_visitors: 0 }))
+    res.send(world)
+  } catch (err) {
+    res.send(err)
+  }
+})
+
+app.post(`${endWorld}/delete`, [
+  check('username'),
+  check('password')
+], async function (req, res) {
+  try {
+    const decoded = await verifyToken(req.headers.authorization)
+    const user = await db.User.findOne({ where: { username: decoded.username } })
+    if (!user || !user.verifyPassword(req.body.password)) {
+      res.send(Boom.unauthorized('invalid_username_or_password').output.payload)
+    }
+    const world = await db.World.findByPk(decoded.id)
+    await world.destroy()
+    res.send(`${user.username}_deleted_his_world`)
+  } catch (err) {
+    res.send(err)
+  }
 })
 
 app.post(`${endUser}/delete`, [
@@ -46,13 +81,52 @@ app.post(`${endUser}/delete`, [
   }
 })
 
-app.post(`${endUser}/show`, async function (req, res) {
-  const decoded = await verifyToken(req.headers.authorization)
-  const user = await db.User.findByPk(decoded.id)
-  res.send(user)
+app.get(`${endVisitor}/:world_id`, async function (req, res) {
+  try {
+    const decoded = await verifyToken(req.headers.authorization)
+    const world = await db.World.findByPk(req.params.world_id)
+    const visit = await db.Visitor.fiindOne({ where: { world_id: req.params.world_id } })
+    if (!visit) {
+      await db.Visitor.create({ where: { user_id: decoded.id, world_id: req.params.world_id, last_login_at: moment().format() } })
+      await world.update({ unique_visitors: world.unique_visitors + 1 })
+    } else {
+      visit.update({ last_login_at: moment().format() })
+    }
+    res.send(world)
+  } catch (err) {
+    res.send(err)
+  }
 })
 
-app.post('/update', [
+app.get(`${endUser}/show`, async function (req, res) {
+  const decoded = await verifyToken(req.headers.authorization)
+  const world = await db.World.findOne({ where: { user_id: decoded.id } })
+  res.send(world)
+})
+
+app.get(`${endUser}/show`, async function (req, res) {
+  const decoded = await verifyToken(req.headers.authorization)
+  const world = await db.World.findOne({ where: { user_id: decoded.id } })
+  res.send(world)
+})
+
+app.post(`${endWorld}/update/:world_id`, [
+  check('sky').isLength({ min: 7 }),
+  check('ground').isLength({ min: 7 }),
+  check('plate').isLength({ min: 7 })
+], async function (req, res) {
+  const world = await db.World.findByPk(req.params.world_id)
+  if (!world) res.send(Boom.notFound('world_not_found').output.payload)
+  const decoded = await verifyToken(req.headers.authorization)
+  const user = await db.User.findOne({ where: { username: decoded.username } })
+  if (!user || !user.verifyPassword(req.body.password)) {
+    res.send(Boom.unauthorized('invalid_username_or_password').output.payload)
+  }
+  const newWorld = await world.update(req.body)
+  res.send(newWorld)
+})
+
+app.post(`${endUser}/update`, [
   check('name').isLength({ min: 10 }),
   check('email').isEmail(),
   check('username').isLength({ min: 7 }),

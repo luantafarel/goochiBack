@@ -12,7 +12,7 @@ const { check } = require('express-validator/check')
 
 const app = express()
 // Probe every 5th second.
-app.param(['id', 'user_id'], function (req, res, next, value) { next() })
+app.param(['id', 'user_id', 'username'], function (req, res, next, value) { next() })
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 const endUser = '/user'
@@ -81,17 +81,28 @@ app.post(`${endUser}/delete`, [
   }
 })
 
-app.get(`${endVisitor}/:world_id`, async function (req, res) {
+app.post(`${endVisitor}/:username`, async function (req, res) {
   try {
     const decoded = await verifyToken(req.headers.authorization)
-    const world = await db.World.findByPk(req.params.world_id)
-    const visit = await db.Visitor.fiindOne({ where: { world_id: req.params.world_id } })
+    const user = await db.User.findOne({ where: { username: req.params.username } })
+    const world = await db.World.findOne({ where: { user_id: user.id } })
+    const visit = await db.Visitor.findOne({ where: { world_id: req.params.world_id } })
     if (!visit) {
       await db.Visitor.create({ where: { user_id: decoded.id, world_id: req.params.world_id, last_login_at: moment().format() } })
       await world.update({ unique_visitors: world.unique_visitors + 1 })
     } else {
       visit.update({ last_login_at: moment().format() })
     }
+    res.send(world)
+  } catch (err) {
+    res.send(err)
+  }
+})
+
+app.get(`${endVisitor}`, async function (req, res) {
+  try {
+    await verifyToken(req.headers.authorization)
+    const world = await db.World.findAll()
     res.send(world)
   } catch (err) {
     res.send(err)
@@ -132,10 +143,18 @@ app.post(`${endUser}/update`, [
   check('username').isLength({ min: 7 }),
   check('password').isLength({ min: 7 })
 ], async function (req, res) {
-  if (await db.User.findOne({ where: { username: req.body.username } })) res.send(Boom.conflict('username_in_use').output.payload)
-  if (await db.User.findOne({ where: { email: req.body.email } })) res.send(Boom.conflict('email_in_use').output.payload)
-  const user = await db.User.create(req.body)
-  res.send(user)
+  try {
+    const decoded = await verifyToken(req.headers.authorization)
+    if (req.body.username) if (await db.User.findOne({ where: { username: req.body.username, [db.sequelize.Op.not]: [{ id: decoded.id }] } })) res.send(Boom.conflict('username_in_use').output.payload)
+    if (req.body.email) if (await db.User.findOne({ where: { email: req.body.email, [db.sequelize.Op.not]: [{ id: decoded.id }] } })) res.send(Boom.conflict('email_in_use').output.payload)
+
+    let user = await db.User.findByPk(decoded.id)
+    await user.update(req.body)
+    user = await db.User.findByPk(decoded.id)
+    res.send(user)
+  } catch (err) {
+    res.send(err)
+  }
 })
 
 app.post('/login', async (req, res) => {

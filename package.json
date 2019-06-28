@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "stop": "pm2 stop back",
-    "start": "pm2 start ecosystem.config.js --env development",
-    "start-dev": "pm2 start ecosystem.config.js --env development && pm2 logs",
+    "start": "pm2 start ecosystem.config.js --env dev",
+    "start-dev": "pm2 start ecosystem.config.js --env dev && pm2 logs",
     "delete": "npm stop && pm2 delete back",
     "migration-create": "node_modules/.bin/sequelize migration:create --name=generic_name",
     "migrate": "node_modules/.bin/sequelize db:migrate",

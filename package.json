@@ -34,7 +34,7 @@
     "bully": "^0.2.3",
     "dotenv": "^8.0.0",
     "event-stream": "^4.0.1",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "express-validator": "^6.0.0",
     "fs": "0.0.1-security",
     "hapi": "^17.8.5",
